@@ -16,12 +16,47 @@ namespace VsXmlDoc2Markdown
             {
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
                 {
-                    XmlDocument doc = new XmlDocument();
-                    doc.LoadXml(xml);
+
                 }
             }
 
             return result;
+        }
+
+        private MarkdownAssembly ParseAssembly(ref string xml)
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            MarkdownAssembly assembly = new MarkdownAssembly();
+            foreach (XmlNode root in doc.ChildNodes)
+            {
+                switch (root.Name.ToLower())
+                {
+                    case "assembly":
+                        ParseAssemblyNode(assembly, root);
+                        break;
+
+                    case "members":
+
+                        break;
+                }
+            }
+
+            return assembly;
+        }
+
+        private void ParseAssemblyNode(MarkdownAssembly assembly, XmlNode assemblyNode)
+        {
+            foreach (XmlNode node in assemblyNode.ChildNodes)
+            {
+                switch (node.Name.ToLower())
+                {
+                    case "name":
+                        assembly.Name = node.InnerText;
+                        break;
+                }
+            }
         }
     }
 }

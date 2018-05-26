@@ -7,7 +7,13 @@ namespace VsXmlDoc2Markdown
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            Console.WriteLine("Args: ");
+            foreach (string s in args)
+                Console.WriteLine(s);
+
+            MarkdownGenerator gen = new MarkdownGenerator();
+
+            Console.ReadKey();
         }
     }
 }
