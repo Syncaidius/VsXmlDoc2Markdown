@@ -38,7 +38,7 @@ namespace VsXmlDoc2Markdown
                         break;
 
                     case "members":
-
+                        ParseMembers(assembly, membersNode);
                         break;
                 }
             }
@@ -54,6 +54,40 @@ namespace VsXmlDoc2Markdown
                 {
                     case "name":
                         assembly.Name = node.InnerText;
+                        break;
+                }
+            }
+        }
+
+        private void ParseMembers(MarkdownAssembly assembly, XmlNode membersNode)
+        {
+            foreach(XmlNode node in membersNode.ChildNodes)
+            {
+                // Parts: 0 = member type, 1 = namespace and name.
+                string[] nameParts = node.Attributes["name"].Value.Split(":");
+                string[] namespaceParts = nameParts[1].Split(".");
+                int lastNsPart = namespaceParts.Length - 1;
+
+                switch (nameParts[0])
+                {
+                    case "F": // Field
+
+                        break;
+
+                    case "T": // Type:
+
+                        break;
+
+                    case "M": // Method
+
+                        break;
+
+                    case "P": // Property
+
+                        break;
+
+                    case "E": // Event
+
                         break;
                 }
             }
