@@ -15,7 +15,7 @@ namespace VsXmlDoc2Markdown
             string xml = "";
 
             // NOTE: FOR TESTING ONLY. UNCOMMENT LINES BELOW TO TEST.
-            using (FileStream stream = new FileStream("VsXmlDoc2Markdown.xml", FileMode.Open, FileAccess.Read))
+            using (FileStream stream = new FileStream("Molten.Render.xml", FileMode.Open, FileAccess.Read))
             {
                 using (StreamReader reader = new StreamReader(stream))
                     xml = reader.ReadToEnd();

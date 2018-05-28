@@ -17,6 +17,11 @@ namespace VsXmlDoc2Markdown
         public ComponentType ComponentType { get; set; }
 
         /// <summary>
+        /// Gets or sets the parent component.
+        /// </summary>
+        public AssemblyComponent Parent { get; set; }
+
+        /// <summary>
         /// Gets or sets the component name.
         /// </summary>
         public string Name { get; set; }

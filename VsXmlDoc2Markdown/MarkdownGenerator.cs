@@ -38,7 +38,11 @@ namespace VsXmlDoc2Markdown
 
         private void WriteMarkdown(AssemblyComponent component, StreamWriter writer, int depth)
         {
-            writer.WriteLine($"{(depth > 0 ? new string('*', depth) : "#")} {component.Name}  ");
+            string indent = "";
+            for (int i = 0; i < depth; i++)
+                indent += "    ";
+
+            writer.WriteLine($"{(depth > 0 ? indent : "#")} {component.Name}  ");
             foreach (string name in component.Children.Keys)
                 WriteMarkdown(component.Children[name], writer, depth + 1);
         }
@@ -85,6 +89,9 @@ namespace VsXmlDoc2Markdown
         {
             foreach(XmlNode node in membersNode.ChildNodes)
             {
+                if (node.Name == "#comment")
+                    continue;
+
                 // Parts: 0 = member type, 1 = namespace and name.
                 string fullName = node.Attributes["name"].Value;
                 Match m = Regex.Match(fullName, @"\((.*?)\)");
@@ -109,6 +116,7 @@ namespace VsXmlDoc2Markdown
                     if (!parent.Children.TryGetValue(name, out com))
                     {
                         com = new AssemblyComponent(ComponentType.Namespace, name);
+                        com.Parent = parent;
                         parent.Children.Add(name, com);
                     }
 
