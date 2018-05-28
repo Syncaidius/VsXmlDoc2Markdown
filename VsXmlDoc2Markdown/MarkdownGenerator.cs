@@ -38,7 +38,7 @@ namespace VsXmlDoc2Markdown
 
         private void WriteMarkdown(AssemblyComponent component, StreamWriter writer, int depth)
         {
-            writer.WriteLine($"{new string('*', depth)} {component.Name}  ");
+            writer.WriteLine($"{(depth > 0 ? new string('*', depth) : "#")} {component.Name}  ");
             foreach (string name in component.Children.Keys)
                 WriteMarkdown(component.Children[name], writer, depth + 1);
         }
