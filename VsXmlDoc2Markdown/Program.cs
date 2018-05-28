@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Xml;
 
 namespace VsXmlDoc2Markdown
@@ -11,7 +12,24 @@ namespace VsXmlDoc2Markdown
             foreach (string s in args)
                 Console.WriteLine(s);
 
+            string xml = "";
+
+            // NOTE: FOR TESTING ONLY. UNCOMMENT LINES BELOW TO TEST.
+            using (FileStream stream = new FileStream("VsXmlDoc2Markdown.xml", FileMode.Open, FileAccess.Read))
+            {
+                using (StreamReader reader = new StreamReader(stream))
+                    xml = reader.ReadToEnd();
+            }
+
             MarkdownGenerator gen = new MarkdownGenerator();
+            string md = gen.ToMarkdown(xml);
+
+
+            using (FileStream stream = new FileStream("test.md", FileMode.Create, FileAccess.Write))
+            {
+                using (StreamWriter writer = new StreamWriter(stream))
+                    writer.Write(md);
+            }
 
             Console.ReadKey();
         }

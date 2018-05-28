@@ -4,7 +4,7 @@ using System.Text;
 
 namespace VsXmlDoc2Markdown
 {
-    public enum MarkdownMemberType
+    public enum ComponentType
     {
         Field = 0,
 
@@ -13,5 +13,13 @@ namespace VsXmlDoc2Markdown
         Method = 3,
 
         Event = 4,
+
+        Type = 5,
+
+        Namespace = 6,
+
+        Assembly = 7,
+
+        Parameter = 8,
     }
 }

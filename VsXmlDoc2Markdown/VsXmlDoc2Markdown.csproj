@@ -6,6 +6,10 @@
     <StartupObject>VsXmlDoc2Markdown.Program</StartupObject>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netcoreapp2.0\VsXmlDoc2Markdown.xml</DocumentationFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="run.windows.bat" />
   </ItemGroup>
