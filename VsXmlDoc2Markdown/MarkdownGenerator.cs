@@ -38,13 +38,24 @@ namespace VsXmlDoc2Markdown
 
         private void WriteMarkdown(AssemblyComponent component, StreamWriter writer, int depth)
         {
-            string indent = "";
-            for (int i = 0; i < depth; i++)
-                indent += "    ";
+            if (component.Parent != null && component.ComponentType == ComponentType.Namespace && component.Parent.ComponentType == ComponentType.Namespace)
+            {
+                writer.Write($".{component.Name}  ");
+            }
+            else
+            {
+                string indent = "";
+                writer.Write("  " + Environment.NewLine);
+                for (int i = 0; i < depth; i++)
+                    indent += "    ";
 
-            writer.WriteLine($"{(depth > 0 ? indent : "#")} {component.Name}  ");
+                writer.Write($"{(depth > 0 ? indent : "#")} {component.Name}");
+                depth++;
+            }
+
+            
             foreach (string name in component.Children.Keys)
-                WriteMarkdown(component.Children[name], writer, depth + 1);
+                WriteMarkdown(component.Children[name], writer, depth);
         }
 
         private AssemblyComponent ParseAssembly(ref string xml)
@@ -94,9 +105,9 @@ namespace VsXmlDoc2Markdown
 
                 // Parts: 0 = member type, 1 = namespace and name.
                 string fullName = node.Attributes["name"].Value;
-                Match m = Regex.Match(fullName, @"\((.*?)\)");
-                if (m.Success)
-                    fullName = fullName.Replace(m.Value, "");
+                Match methodParams = Regex.Match(fullName, @"\((.*?)\)");
+                if (methodParams.Success)
+                    fullName = fullName.Replace(methodParams.Value, "");
 
                 string[] nameParts = fullName.Split(":");
                 string[] nsParts = nameParts[1].Split(".");
@@ -110,46 +121,51 @@ namespace VsXmlDoc2Markdown
                 AssemblyComponent parent = assembly;
                 for(; i < typeNameID; i++)
                 {
-                    string name = nsParts[i];
-                    AssemblyComponent com;
+                    string nsName = nsParts[i];
+                    AssemblyComponent nsCom;
 
-                    if (!parent.Children.TryGetValue(name, out com))
+                    if (!parent.Children.TryGetValue(nsName, out nsCom))
                     {
-                        com = new AssemblyComponent(ComponentType.Namespace, name);
-                        com.Parent = parent;
-                        parent.Children.Add(name, com);
+                        nsCom = new AssemblyComponent(ComponentType.Namespace, nsName);
+                        nsCom.Parent = parent;
+                        parent.Children.Add(nsName, nsCom);
                     }
 
-                    parent = com;
+                    parent = nsCom;
                 }
+
+                AssemblyComponent com = new AssemblyComponent(ComponentType.Namespace, nsParts[typeNameID]);
+                com.Parent = parent;
 
                 switch (nameParts[0])
                 {
                     case "F": // Field
-                        // We now know it's parent is a type.
                         parent.ComponentType = ComponentType.Type;
-
+                        com.ComponentType = ComponentType.Field;
                         break;
 
                     case "T": // Type:
-
+                        com.ComponentType = ComponentType.Type;
                         break;
 
                     case "M": // Method
-                        // We now know it's parent is a type.
                         parent.ComponentType = ComponentType.Type;
-
+                        com.Name += methodParams.Success ? methodParams.Value : "";
+                        com.ComponentType = ComponentType.Type;
                         break;
 
                     case "P": // Property
-                        // We now know it's parent is a type.
                         parent.ComponentType = ComponentType.Type;
+                        com.ComponentType = ComponentType.Property;
                         break;
 
                     case "E": // Event
-
+                        parent.ComponentType = ComponentType.Type;
+                        com.ComponentType = ComponentType.Event;
                         break;
                 }
+
+                parent.Children.Add(com.Name, com);
             }
         }
     }

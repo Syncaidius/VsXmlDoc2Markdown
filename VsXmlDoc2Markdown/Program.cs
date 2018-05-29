@@ -12,7 +12,11 @@ namespace VsXmlDoc2Markdown
             foreach (string s in args)
                 Console.WriteLine(s);
 
+            string fn = args.Length > 0 ? args[1] ?? null : null;
             string xml = "";
+
+            if (fn == null)
+                Console.WriteLine("No XML file was specified.");
 
             // NOTE: FOR TESTING ONLY. UNCOMMENT LINES BELOW TO TEST.
             using (FileStream stream = new FileStream("Molten.Render.xml", FileMode.Open, FileAccess.Read))
@@ -30,8 +34,6 @@ namespace VsXmlDoc2Markdown
                 using (StreamWriter writer = new StreamWriter(stream))
                     writer.Write(md);
             }
-
-            Console.ReadKey();
         }
     }
 }
