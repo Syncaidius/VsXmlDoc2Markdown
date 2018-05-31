@@ -27,20 +27,7 @@ namespace VsXmlDoc2Markdown
             }
 
             MarkdownGenerator gen = new MarkdownGenerator();
-            List<MarkdownResult> results = gen.ToMarkdown(xml);
-
-            foreach(MarkdownResult result in results)
-            {
-                string path = $"docs/{result.Path}";
-                if (!Directory.Exists(path))
-                    Directory.CreateDirectory(path);
-
-                using (FileStream stream = new FileStream($"{path}/{result.Title}.md", FileMode.Create, FileAccess.Write))
-                {
-                    using (StreamWriter writer = new StreamWriter(stream))
-                        writer.Write(result.Markdown);
-                }
-            }
+            gen.ToMarkdown("docs/", xml);
         }
     }
 }

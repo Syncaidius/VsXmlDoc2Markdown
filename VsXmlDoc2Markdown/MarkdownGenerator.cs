@@ -13,48 +13,37 @@ namespace VsXmlDoc2Markdown
     public class MarkdownGenerator
     {
         /// <summary>
-        /// Generates Markdown from Visual Studio XML documentation.
+        /// Generates Markdown file from Visual Studio XML documentation.
         /// </summary>
+        /// <param name="path">The path to store the markdown files.</param>
         /// <param name="xml">The xml documentation string.</param>
         /// <returns></returns>
-        public List<MarkdownResult> ToMarkdown(string xml)
+        public void ToMarkdown(string path, string xml)
         {
-            List<MarkdownResult> results = new List<MarkdownResult>();
-            string markdown = "";
             AssemblyComponent assembly = ParseAssembly(ref xml);
 
-            using (MemoryStream stream = new MemoryStream())
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+
+            using (FileStream stream = new FileStream($"{path}/{assembly.Name}.md", FileMode.Create, FileAccess.Write))
             {
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
                 {
                     GenerateIndex(assembly, writer, 0, "");
                 }
-
-                stream.Flush();
-                markdown = Encoding.UTF8.GetString(stream.ToArray());
-                results.Add(new MarkdownResult()
-                {
-                    Markdown = markdown,
-                    Title = assembly.Name,
-                    Path = assembly.Name,
-                });
             }
 
             // Produce individual markdown page results for all types within the assembly.
-            GeneratePages(results, assembly);
-            return results;
+            GeneratePages(path, assembly);
         }
 
-        private void GeneratePages(List<MarkdownResult> results, AssemblyComponent component)
+        private void GeneratePages(string path, AssemblyComponent component)
         {
             if (component.ComponentType == ComponentType.Type)
-            {
-                MarkdownResult result = GenerateTypePage(component);
-                results.Add(result);
-            }
+                GenerateTypePage(path, component);
 
             foreach (AssemblyComponent child in component.Children.Values)
-                GeneratePages(results, child);
+                GeneratePages(path, child);
         }
 
         private void GenerateIndex(AssemblyComponent component, StreamWriter writer, int depth, string path)
@@ -201,11 +190,8 @@ namespace VsXmlDoc2Markdown
             }
         }
 
-        private MarkdownResult GenerateTypePage(AssemblyComponent typeComponent)
+        private void GenerateTypePage(string path, AssemblyComponent typeComponent)
         {
-            MarkdownResult result = new MarkdownResult();
-            result.Title = typeComponent.Name;
-            string markdown = "";
             string directory = typeComponent.Name;
 
             AssemblyComponent parent = typeComponent.Parent;
@@ -215,24 +201,17 @@ namespace VsXmlDoc2Markdown
                 parent = parent.Parent;
             }
 
-            using (MemoryStream stream = new MemoryStream())
+            string fullDir = $"{path}/{directory}";
+            if (!Directory.Exists(fullDir))
+                Directory.CreateDirectory(fullDir);
+
+            using (FileStream stream = new FileStream($"{fullDir}/{typeComponent.Name}.md", FileMode.Create, FileAccess.Write))
             {
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
                 {
                    
                 }
-
-                stream.Flush();
-                markdown = Encoding.UTF8.GetString(stream.ToArray());
             }
-
-
-            return new MarkdownResult()
-            {
-                Markdown = markdown,
-                Title = typeComponent.Name,
-                Path = directory,
-            };
         }
     }
 }
