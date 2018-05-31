@@ -27,6 +27,16 @@ namespace VsXmlDoc2Markdown
         public string Name { get; set; }
 
         /// <summary>
+        /// Gets or sets the parameter information.
+        /// </summary>
+        public string Parameters { get; set; }
+
+        /// <summary>
+        /// Gets the full name of the component, which includes any generic or method paramters it may have.
+        /// </summary>
+        public string FullName => Name + Parameters;
+
+        /// <summary>
         /// Gets or sets the component summary.
         /// </summary>
         public string Summary { get; set; }
@@ -49,7 +59,7 @@ namespace VsXmlDoc2Markdown
         /// <returns></returns>
         public override string ToString()
         {
-            return $"{Name} - {ComponentType}";
+            return $"{Name}{Parameters} - {ComponentType}";
         }
     }
 }

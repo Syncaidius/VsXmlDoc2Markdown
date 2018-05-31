@@ -17,26 +17,47 @@ namespace VsXmlDoc2Markdown
         /// </summary>
         /// <param name="xml">The xml documentation string.</param>
         /// <returns></returns>
-        public string ToMarkdown(string xml)
+        public List<MarkdownResult> ToMarkdown(string xml)
         {
-            string result = "";
+            List<MarkdownResult> results = new List<MarkdownResult>();
+            string markdown = "";
             AssemblyComponent assembly = ParseAssembly(ref xml);
 
             using (MemoryStream stream = new MemoryStream())
             {
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
                 {
-                    WriteMarkdown(assembly, writer, 0);
+                    GenerateIndex(assembly, writer, 0, "");
                 }
 
                 stream.Flush();
-                result = Encoding.UTF8.GetString(stream.ToArray());
+                markdown = Encoding.UTF8.GetString(stream.ToArray());
+                results.Add(new MarkdownResult()
+                {
+                    Markdown = markdown,
+                    Title = assembly.Name,
+                    Path = assembly.Name,
+                });
             }
 
-            return result;
+            // Produce individual markdown page results for all types within the assembly.
+            GeneratePages(results, assembly);
+            return results;
         }
 
-        private void WriteMarkdown(AssemblyComponent component, StreamWriter writer, int depth)
+        private void GeneratePages(List<MarkdownResult> results, AssemblyComponent component)
+        {
+            if (component.ComponentType == ComponentType.Type)
+            {
+                MarkdownResult result = GenerateTypePage(component);
+                results.Add(result);
+            }
+
+            foreach (AssemblyComponent child in component.Children.Values)
+                GeneratePages(results, child);
+        }
+
+        private void GenerateIndex(AssemblyComponent component, StreamWriter writer, int depth, string path)
         {
             if (component.Parent != null && component.ComponentType == ComponentType.Namespace && component.Parent.ComponentType == ComponentType.Namespace)
             {
@@ -46,16 +67,27 @@ namespace VsXmlDoc2Markdown
             {
                 string indent = "";
                 writer.Write("  " + Environment.NewLine);
-                for (int i = 0; i < depth; i++)
-                    indent += "    ";
 
-                writer.Write($"{(depth > 0 ? indent : "#")} {component.Name}");
+                if (depth > 0)
+                {
+                    for (int i = 0; i < depth - 1; i++)
+                        indent += "    ";
+                    indent += "- ";
+                }
+
+                string derp = "";
+                if(!string.IsNullOrEmpty(path) && component.ComponentType == ComponentType.Type)
+                    derp = $"{(depth > 0 ? indent : "#")} [{component.Name}]({path}/{component.Name}.md)";
+                else
+                    derp = ($"{(depth > 0 ? indent : "#")} {component.Name}");
+
+                writer.Write(derp);
                 depth++;
             }
 
             
             foreach (string name in component.Children.Keys)
-                WriteMarkdown(component.Children[name], writer, depth);
+                GenerateIndex(component.Children[name], writer, depth, $"{path}/{component.Name}");
         }
 
         private AssemblyComponent ParseAssembly(ref string xml)
@@ -150,8 +182,8 @@ namespace VsXmlDoc2Markdown
 
                     case "M": // Method
                         parent.ComponentType = ComponentType.Type;
-                        com.Name += methodParams.Success ? methodParams.Value : "";
-                        com.ComponentType = ComponentType.Type;
+                        com.Parameters = methodParams.Success ? methodParams.Value : "";
+                        com.ComponentType = ComponentType.Method;
                         break;
 
                     case "P": // Property
@@ -165,8 +197,42 @@ namespace VsXmlDoc2Markdown
                         break;
                 }
 
-                parent.Children.Add(com.Name, com);
+                parent.Children.Add(com.FullName, com);
             }
+        }
+
+        private MarkdownResult GenerateTypePage(AssemblyComponent typeComponent)
+        {
+            MarkdownResult result = new MarkdownResult();
+            result.Title = typeComponent.Name;
+            string markdown = "";
+            string directory = typeComponent.Name;
+
+            AssemblyComponent parent = typeComponent.Parent;
+            while(parent != null)
+            {
+                directory = $"{parent.Name}/{directory}";
+                parent = parent.Parent;
+            }
+
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
+                {
+                   
+                }
+
+                stream.Flush();
+                markdown = Encoding.UTF8.GetString(stream.ToArray());
+            }
+
+
+            return new MarkdownResult()
+            {
+                Markdown = markdown,
+                Title = typeComponent.Name,
+                Path = directory,
+            };
         }
     }
 }

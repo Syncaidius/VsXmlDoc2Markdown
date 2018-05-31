@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 
@@ -26,13 +27,19 @@ namespace VsXmlDoc2Markdown
             }
 
             MarkdownGenerator gen = new MarkdownGenerator();
-            string md = gen.ToMarkdown(xml);
+            List<MarkdownResult> results = gen.ToMarkdown(xml);
 
-
-            using (FileStream stream = new FileStream("test.md", FileMode.Create, FileAccess.Write))
+            foreach(MarkdownResult result in results)
             {
-                using (StreamWriter writer = new StreamWriter(stream))
-                    writer.Write(md);
+                string path = $"docs/{result.Path}";
+                if (!Directory.Exists(path))
+                    Directory.CreateDirectory(path);
+
+                using (FileStream stream = new FileStream($"{path}/{result.Title}.md", FileMode.Create, FileAccess.Write))
+                {
+                    using (StreamWriter writer = new StreamWriter(stream))
+                        writer.Write(result.Markdown);
+                }
             }
         }
     }
