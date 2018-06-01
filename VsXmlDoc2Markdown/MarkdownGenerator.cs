@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using System.Linq;
 
 namespace VsXmlDoc2Markdown
 {
@@ -48,35 +49,55 @@ namespace VsXmlDoc2Markdown
 
         private void GenerateIndex(AssemblyComponent component, StreamWriter writer, int depth, string path)
         {
-            if (component.Parent != null && component.ComponentType == ComponentType.Namespace && component.Parent.ComponentType == ComponentType.Namespace)
+            bool collapsible = false;
+
+            if (component.Parent != null && component.ComponentType == ComponentType.Namespace)
             {
-                writer.Write($".{component.Name}  ");
+                string ns = component.Name;
+
+                // Get full namespace by travelling backup the tree.
+                AssemblyComponent p = component.Parent;
+                while (p != null && p.ComponentType == ComponentType.Namespace)
+                {
+                    ns = $"{p.Name}.{ns}";
+                    p = p.Parent;
+                    depth = 1;
+                }
+
+                writer.Write("  " + Environment.NewLine);
+                writer.Write($" - {ns}");
             }
             else
             {
-                string indent = "";
-                writer.Write("  " + Environment.NewLine);
-
-                if (depth > 0)
+                if (!string.IsNullOrEmpty(path) && component.ComponentType == ComponentType.Type)
                 {
-                    for (int i = 0; i < depth - 1; i++)
-                        indent += "    ";
-                    indent += "- ";
+                    writer.Write($"<details><summary>{(depth > 0 ? "" : "#")} <a href=\"{path}/{component.Name}.md\">{component.Name}</a></summary><ul>");
+                    collapsible = true;
+                }
+                else
+                {
+                    string indent = "";
+
+                    writer.Write("  " + Environment.NewLine);
+
+                    if (depth > 0)
+                    {
+                        for (int i = 0; i < depth - 1; i++)
+                            indent += "    ";
+                        indent += "- ";
+                    }
+                    writer.Write($"{(depth > 0 ? indent : "#")} {component.Name}");
                 }
 
-                string derp = "";
-                if(!string.IsNullOrEmpty(path) && component.ComponentType == ComponentType.Type)
-                    derp = $"{(depth > 0 ? indent : "#")} [{component.Name}]({path}/{component.Name}.md)";
-                else
-                    derp = ($"{(depth > 0 ? indent : "#")} {component.Name}");
-
-                writer.Write(derp);
                 depth++;
             }
 
             
             foreach (string name in component.Children.Keys)
                 GenerateIndex(component.Children[name], writer, depth, $"{path}/{component.Name}");
+
+            if (collapsible)
+                writer.Write("</ul></details>");
         }
 
         private AssemblyComponent ParseAssembly(ref string xml)
@@ -191,7 +212,7 @@ namespace VsXmlDoc2Markdown
                         break;
                 }
 
-                parent.Children.Add(com.FullName + com.Parameters, com);
+                parent.Children.Add(com.FullName, com);
             }
         }
 
