@@ -39,7 +39,16 @@ namespace VsXmlDoc2Markdown
         /// <summary>
         /// Gets the full name of the component, which includes any generic or method paramters it may have.
         /// </summary>
-        public string FullName => $"{Name}{Parameters} {(ReturnType == null ? "" : $"[{ReturnType}]")}";
+        public string FullName
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(ReturnType))
+                    return $"{Name}{Parameters}";
+                else
+                    return $"{Name}{Parameters} [{ReturnType}]";
+            }
+        }
 
         /// <summary>
         /// Gets or sets the component summary.
