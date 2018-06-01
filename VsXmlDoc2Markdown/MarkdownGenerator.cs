@@ -13,6 +13,8 @@ namespace VsXmlDoc2Markdown
     /// </summary>
     public class MarkdownGenerator
     {
+        AssemblyComponentComparer _componentComparer = new AssemblyComponentComparer();
+
         /// <summary>
         /// Generates Markdown file from Visual Studio XML documentation.
         /// </summary>
@@ -60,11 +62,11 @@ namespace VsXmlDoc2Markdown
                 {
                     ns = $"{p.Name}.{ns}";
                     p = p.Parent;
-                    depth = 1;
                 }
 
+                depth = 1;
                 writer.Write("  " + Environment.NewLine);
-                writer.Write($" - {ns}");
+                writer.Write($"* {ns}");
             }
             else
             {
@@ -76,7 +78,7 @@ namespace VsXmlDoc2Markdown
                     {
                         for (int i = 0; i < depth - 1; i++)
                             indent += "    ";
-                        indent += "- ";
+                        indent += "* ";
                     }
 
                     writer.Write("  " + Environment.NewLine);
@@ -86,9 +88,11 @@ namespace VsXmlDoc2Markdown
                 depth++;
             }
 
-            
-            foreach (string name in component.Children.Keys)
-                GenerateIndex(component.Children[name], writer, depth + 1, $"{path}/{component.Name}");
+            List<AssemblyComponent> children = component.Children.Values.ToList();
+            children.Sort(_componentComparer);
+
+            foreach (AssemblyComponent child in children)
+                GenerateIndex(child, writer, depth + 1, $"{path}/{component.Name}");
         }
 
         private AssemblyComponent ParseAssembly(ref string xml)
@@ -142,6 +146,31 @@ namespace VsXmlDoc2Markdown
                 if (methodParams.Success)
                     fullName = fullName.Replace(methodParams.Value, "");
 
+                Match genericParams = Regex.Match(fullName, "(`+[0-9])");
+                if (genericParams.Success)
+                {
+                    int genericCount = 0;
+                    string generic = "";
+
+                    if (int.TryParse(genericParams.Value.Replace("`", ""), out genericCount))
+                    {
+                        if (genericCount > 1)
+                        {
+                            generic = "&lt;T0";
+                            for (int g = 1; g < genericCount; g++)
+                                generic += $",T{g}";
+
+                            generic += "&gt;";
+                        }
+                        else
+                        {
+                            generic = "&lt;T&gt;";
+                        }
+                    }
+                    
+                    fullName = fullName.Replace(genericParams.Value, generic);
+                }
+
                 string[] nameParts = fullName.Split(":");
 
                 string[] tnParts = nameParts[1].Split("~");
@@ -156,19 +185,7 @@ namespace VsXmlDoc2Markdown
                 // Add or locate namespace components
                 AssemblyComponent parent = assembly;
                 for(; i < typeNameID; i++)
-                {
-                    string nsName = nsParts[i];
-                    AssemblyComponent nsCom;
-
-                    if (!parent.Children.TryGetValue(nsName, out nsCom))
-                    {
-                        nsCom = new AssemblyComponent(ComponentType.Namespace, nsName);
-                        nsCom.Parent = parent;
-                        parent.Children.Add(nsName, nsCom);
-                    }
-
-                    parent = nsCom;
-                }
+                    parent = parent[nsParts[i]];
 
                 if (parent.ComponentType == ComponentType.OperatorMethod)
                     continue;
@@ -229,7 +246,8 @@ namespace VsXmlDoc2Markdown
             if (!Directory.Exists(fullDir))
                 Directory.CreateDirectory(fullDir);
 
-            using (FileStream stream = new FileStream($"{fullDir}/{typeComponent.Name}.md", FileMode.Create, FileAccess.Write))
+            string fn = Regex.Replace(typeComponent.Name, @"<|>|\[|\]|(&gt;)|(&lt;)", "_");
+            using (FileStream stream = new FileStream($"{fullDir}/{fn}.md", FileMode.Create, FileAccess.Write))
             {
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
                 {

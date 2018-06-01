@@ -16,15 +16,15 @@ namespace VsXmlDoc2Markdown
             if(args.Length == 0)
             {
                 Array.Resize(ref args, 1);
-                args[0] = "Molten.Math.xml";
+                args[0] = "Molten.Render.xml";
             }
 
             foreach (string fn in args)
             {
                 if(File.Exists(fn))
-                    Console.WriteLine($"Checking file...{fn}");
+                    Console.WriteLine($"Parsing...{fn}");
                 else
-                    Console.WriteLine("No XML file was specified.");
+                    Console.WriteLine($"File not found...{fn}");
 
 
                 // Chop the / off the end, if found. It's not needed, but will cause issues on some platforms due to producing "//" during path concatenation.

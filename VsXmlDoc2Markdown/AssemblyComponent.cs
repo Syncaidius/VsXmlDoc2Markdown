@@ -75,5 +75,28 @@ namespace VsXmlDoc2Markdown
         {
             return $"{Name}{Parameters} - {ComponentType}";
         }
+
+        /// <summary>
+        /// Gets a child component with the specified name. If the child does not exist, it will be created.
+        /// </summary>
+        /// <param name="childName">The name of the child component to be retrieved.</param>
+        /// <returns>A <see cref="AssemblyComponent"/>.</returns>
+        public AssemblyComponent this[string childName]
+        {
+            get
+            {
+                if (Children.TryGetValue(childName, out AssemblyComponent child))
+                {
+                    return child;
+                }
+                else
+                {
+                    child = new AssemblyComponent(ComponentType.Namespace, childName);
+                    child.Parent = this;
+                    Children.Add(childName, child);
+                    return child;
+                }
+            }
+        }
     }
 }
