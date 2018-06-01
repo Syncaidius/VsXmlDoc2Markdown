@@ -49,8 +49,6 @@ namespace VsXmlDoc2Markdown
 
         private void GenerateIndex(AssemblyComponent component, StreamWriter writer, int depth, string path)
         {
-            bool collapsible = false;
-
             if (component.Parent != null && component.ComponentType == ComponentType.Namespace)
             {
                 string ns = component.Name;
@@ -71,14 +69,7 @@ namespace VsXmlDoc2Markdown
             {
                 if (!string.IsNullOrEmpty(path) && component.ComponentType == ComponentType.Type)
                 {
-                    writer.Write($"<details><summary>{(depth > 0 ? "" : "#")} <a href=\"{path}/{component.Name}.md\">{component.Name}</a></summary><ul>");
-                    collapsible = true;
-                }
-                else
-                {
                     string indent = "";
-
-                    writer.Write("  " + Environment.NewLine);
 
                     if (depth > 0)
                     {
@@ -86,7 +77,9 @@ namespace VsXmlDoc2Markdown
                             indent += "    ";
                         indent += "- ";
                     }
-                    writer.Write($"{(depth > 0 ? indent : "#")} {component.Name}");
+
+                    writer.Write("  " + Environment.NewLine);
+                    writer.Write($"{(depth > 0 ? indent : "#")} [{component.Name}]({path}/{component.Name}.md)");
                 }
 
                 depth++;
@@ -94,10 +87,7 @@ namespace VsXmlDoc2Markdown
 
             
             foreach (string name in component.Children.Keys)
-                GenerateIndex(component.Children[name], writer, depth, $"{path}/{component.Name}");
-
-            if (collapsible)
-                writer.Write("</ul></details>");
+                GenerateIndex(component.Children[name], writer, depth + 1, $"{path}/{component.Name}");
         }
 
         private AssemblyComponent ParseAssembly(ref string xml)
@@ -168,13 +158,20 @@ namespace VsXmlDoc2Markdown
 
                     if (!parent.Children.TryGetValue(nsName, out nsCom))
                     {
-                        nsCom = new AssemblyComponent(ComponentType.Namespace, nsName);
+                        ComponentType nType = ComponentType.Namespace;
+                        if (nsName.StartsWith("op_"))
+                            nType = ComponentType.OperatorMethod;
+
+                        nsCom = new AssemblyComponent(nType, nsName);
                         nsCom.Parent = parent;
                         parent.Children.Add(nsName, nsCom);
                     }
 
                     parent = nsCom;
                 }
+
+                if (parent.ComponentType == ComponentType.OperatorMethod)
+                    continue;
 
                 AssemblyComponent com = new AssemblyComponent(ComponentType.Namespace, nsParts[typeNameID]);
                 com.Parent = parent;

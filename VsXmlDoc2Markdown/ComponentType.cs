@@ -23,5 +23,7 @@ namespace VsXmlDoc2Markdown
         Parameter = 8,
 
         IndexerProperty = 9,
+
+        OperatorMethod = 10,
     }
 }
