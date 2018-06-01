@@ -142,8 +142,11 @@ namespace VsXmlDoc2Markdown
                     fullName = fullName.Replace(methodParams.Value, "");
 
                 string[] nameParts = fullName.Split(":");
-                string[] nsParts = nameParts[1].Split(".");
+
+                string[] tnParts = nameParts[1].Split("~");
+                string[] nsParts = tnParts[0].Split(".");
                 int typeNameID = nsParts.Length - 1;
+                string returnType = tnParts.Length > 1 ? tnParts[1] : "";
 
                 int i = 0;
                 if (nsParts[0] == assembly.Name)
@@ -158,11 +161,7 @@ namespace VsXmlDoc2Markdown
 
                     if (!parent.Children.TryGetValue(nsName, out nsCom))
                     {
-                        ComponentType nType = ComponentType.Namespace;
-                        if (nsName.StartsWith("op_"))
-                            nType = ComponentType.OperatorMethod;
-
-                        nsCom = new AssemblyComponent(nType, nsName);
+                        nsCom = new AssemblyComponent(ComponentType.Namespace, nsName);
                         nsCom.Parent = parent;
                         parent.Children.Add(nsName, nsCom);
                     }
@@ -176,6 +175,7 @@ namespace VsXmlDoc2Markdown
                 AssemblyComponent com = new AssemblyComponent(ComponentType.Namespace, nsParts[typeNameID]);
                 com.Parent = parent;
                 com.Parameters = methodParams.Success ? methodParams.Value : "";
+                com.ReturnType = returnType;
 
                 switch (nameParts[0])
                 {
