@@ -13,21 +13,24 @@ namespace VsXmlDoc2Markdown
             foreach (string s in args)
                 Console.WriteLine(s);
 
-            string fn = args.Length > 0 ? args[1] ?? null : null;
+            string sourceFilename = args.Length > 0 ? args[1] : null;
+            string directory = args.Length > 1 ? args[2] : "docs/";
             string xml = "";
 
-            if (fn == null)
+            if (sourceFilename == null)
                 Console.WriteLine("No XML file was specified.");
 
             // NOTE: FOR TESTING ONLY. UNCOMMENT LINES BELOW TO TEST.
-            using (FileStream stream = new FileStream("Molten.Render.xml", FileMode.Open, FileAccess.Read))
+            sourceFilename = sourceFilename ?? "VsXmlDoc2Markdown.xml";
+
+            using (FileStream stream = new FileStream(sourceFilename, FileMode.Open, FileAccess.Read))
             {
                 using (StreamReader reader = new StreamReader(stream))
                     xml = reader.ReadToEnd();
             }
 
             MarkdownGenerator gen = new MarkdownGenerator();
-            gen.ToMarkdown("docs/", xml);
+            gen.ToMarkdown(directory, xml);
         }
     }
 }

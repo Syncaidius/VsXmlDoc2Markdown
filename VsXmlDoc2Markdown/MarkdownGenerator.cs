@@ -192,7 +192,7 @@ namespace VsXmlDoc2Markdown
 
         private void GenerateTypePage(string path, AssemblyComponent typeComponent)
         {
-            string directory = typeComponent.Name;
+            string directory = "";
 
             AssemblyComponent parent = typeComponent.Parent;
             while(parent != null)
