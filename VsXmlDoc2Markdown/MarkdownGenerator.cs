@@ -30,6 +30,7 @@ namespace VsXmlDoc2Markdown
             {
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
                 {
+                    writer.Write($"# {assembly.Name}");
                     GenerateIndex(assembly, writer, 0, "");
                 }
             }
