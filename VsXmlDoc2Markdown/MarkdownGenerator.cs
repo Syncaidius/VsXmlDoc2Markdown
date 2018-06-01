@@ -157,6 +157,7 @@ namespace VsXmlDoc2Markdown
 
                 AssemblyComponent com = new AssemblyComponent(ComponentType.Namespace, nsParts[typeNameID]);
                 com.Parent = parent;
+                com.Parameters = methodParams.Success ? methodParams.Value : "";
 
                 switch (nameParts[0])
                 {
@@ -171,13 +172,17 @@ namespace VsXmlDoc2Markdown
 
                     case "M": // Method
                         parent.ComponentType = ComponentType.Type;
-                        com.Parameters = methodParams.Success ? methodParams.Value : "";
+
                         com.ComponentType = ComponentType.Method;
                         break;
 
                     case "P": // Property
                         parent.ComponentType = ComponentType.Type;
-                        com.ComponentType = ComponentType.Property;
+
+                        if (!string.IsNullOrWhiteSpace(com.Parameters))
+                            com.ComponentType = ComponentType.IndexerProperty;
+                        else
+                            com.ComponentType = ComponentType.Property;
                         break;
 
                     case "E": // Event
@@ -186,7 +191,7 @@ namespace VsXmlDoc2Markdown
                         break;
                 }
 
-                parent.Children.Add(com.FullName, com);
+                parent.Children.Add(com.FullName + com.Parameters, com);
             }
         }
 

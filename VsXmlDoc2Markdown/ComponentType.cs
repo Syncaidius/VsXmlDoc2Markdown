@@ -21,5 +21,7 @@ namespace VsXmlDoc2Markdown
         Assembly = 7,
 
         Parameter = 8,
+
+        IndexerProperty = 9,
     }
 }
