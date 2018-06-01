@@ -10,11 +10,12 @@ namespace VsXmlDoc2Markdown
         {
             if (x.ComponentType == ComponentType.Namespace && y.ComponentType != ComponentType.Namespace)
                 return 1;
-
-            if (x.ComponentType != ComponentType.Namespace && y.ComponentType == ComponentType.Namespace)
+            else if (x.ComponentType != ComponentType.Namespace && y.ComponentType == ComponentType.Namespace)
                 return -1;
+            else if (x.ComponentType == ComponentType.Namespace && y.ComponentType == ComponentType.Namespace)
+                return 0;
 
-            return 0;
+            return x.Name.CompareTo(y.Name);
         }
     }
 }
