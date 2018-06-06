@@ -37,6 +37,11 @@ namespace VsXmlDoc2Markdown
         public string ReturnType { get; set; }
 
         /// <summary>
+        /// Gets or sets the parent namespace.
+        /// </summary>
+        public string ParentNamespace { get; set; }
+
+        /// <summary>
         /// Gets the full name of the component, which includes any generic or method paramters it may have.
         /// </summary>
         public string FullName
@@ -49,6 +54,11 @@ namespace VsXmlDoc2Markdown
                     return $"{Name}{Parameters} [{ReturnType}]";
             }
         }
+
+        /// <summary>
+        /// Gets the assembly-qualified name which includes the <see cref="ParentNamespace"/> and the <see cref="FullName"/>.
+        /// </summary>
+        public string QualifiedName => $"{ParentNamespace}.{FullName}";
 
         /// <summary>
         /// Gets or sets the component summary.

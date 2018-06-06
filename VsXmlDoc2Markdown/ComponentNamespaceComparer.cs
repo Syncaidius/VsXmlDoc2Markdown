@@ -4,7 +4,7 @@ using System.Text;
 
 namespace VsXmlDoc2Markdown
 {
-    internal class AssemblyComponentComparer : IComparer<AssemblyComponent>
+    internal class ComponentNamespaceComparer : IComparer<AssemblyComponent>
     {
         public int Compare(AssemblyComponent x, AssemblyComponent y)
         {

@@ -16,7 +16,7 @@ namespace VsXmlDoc2Markdown
             if(args.Length == 0)
             {
                 Array.Resize(ref args, 1);
-                args[0] = "Molten.Render.xml";
+                args[0] = "Molten.Utility.xml";
             }
 
             foreach (string fn in args)
