@@ -105,7 +105,7 @@ namespace VsXmlDoc2Markdown
                 }
                 else
                 {
-                    writer.WriteLine($"# {path}.{component.Name}");
+                    writer.WriteLine($"# {component.ParentNamespace}.{component.Name}");
                     writer.WriteLine($"{component.Summary}");
                 }
             }
