@@ -9,9 +9,9 @@ Very work-in-progress. It works, but it doesn't at the same time. Magic eh? ;)
 
 Currently, there are a few ways:
 
- 1. If you're on Windows: Drag and drop XML doc files onto the ```run.windows.bat``` file
- 2. If you're on Windows, Mac or Linux: Run ```dotnet VsXmlDoc2Markdown <XML_filename_here>``` via command line
+ 1. If you're on Windows: Drag and drop one or more XML doc files onto the ```run.windows.bat``` file
+ 2. If you're on Windows, Mac or Linux: Run ```dotnet VsXmlDoc2Markdown <XML_filename(s)>``` via command line
 
-Ensure you have the [.NET Core 2.0](https://www.microsoft.com/net/download/all) framework installed before attemping to run.
+Ensure you have the [.NET Core 2.0](https://www.microsoft.com/net/download/all) runtime installed before attemping to run.
 
 
