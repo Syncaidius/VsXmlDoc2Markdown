@@ -15,6 +15,7 @@ namespace VsXmlDoc2Markdown
     {
 
         ComponentNamespaceComparer _namespaceComparer = new ComponentNamespaceComparer();
+        TypeNameParser _nameParser = new TypeNameParser();
 
         /// <summary>
         /// Generates Markdown file from Visual Studio XML documentation.
@@ -34,24 +35,12 @@ namespace VsXmlDoc2Markdown
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
                 {
                     writer.Write($"# {assembly.Name}");
-                    GenerateIndex(assembly, writer, 0, "");
+                    GenerateIndexPage(assembly, writer, 0, path);
                 }
             }
-
-            // Produce individual markdown page results for all types within the assembly.
-            GeneratePages(path, assembly);
         }
 
-        private void GeneratePages(string path, AssemblyComponent component)
-        {
-            if (component.ComponentType == ComponentType.Type)
-                GenerateTypePage(path, component);
-
-            foreach (AssemblyComponent child in component.Children.Values)
-                GeneratePages(path, child);
-        }
-
-        private void GenerateIndex(AssemblyComponent component, StreamWriter writer, int depth, string path)
+        private void GenerateIndexPage(AssemblyComponent component, StreamWriter writer, int depth, string path)
         {
             if (component.Parent != null && component.ComponentType == ComponentType.Namespace)
             {
@@ -74,17 +63,14 @@ namespace VsXmlDoc2Markdown
                 if (!string.IsNullOrEmpty(path) && component.ComponentType == ComponentType.Type)
                 {
                     string indent = "";
-
-                    if (depth > 0)
-                    {
-                        for (int i = 0; i < depth - 1; i++)
-                            indent += "    ";
-                        indent += "* ";
-                    }
+                    for (int i = 0; i < depth - 1; i++)
+                        indent += "    ";
+                    indent += "* ";
 
                     writer.Write("  " + Environment.NewLine);
                     string fn = SanitizeFilename(component.Name);
-                    writer.Write($"{(depth > 0 ? indent : "#")} [{component.Name}]({path}/{fn}.md)");
+                    writer.Write($"{indent} [{component.Name}]({path}/{fn}.md)");
+                    GenerateTypePage(path, component);
                 }
 
                 depth++;
@@ -94,7 +80,41 @@ namespace VsXmlDoc2Markdown
             children.Sort(_namespaceComparer);
 
             foreach (AssemblyComponent child in children)
-                GenerateIndex(child, writer, depth + 1, $"{path}/{component.Name}");
+                GenerateIndexPage(child, writer, depth + 1, $"{path}/{component.Name}");
+        }
+
+        private void GenerateTypeIndex(AssemblyComponent component, StreamWriter writer, int depth, string path)
+        {
+            if (!string.IsNullOrEmpty(path))
+            {
+                string indent = "";
+
+                if (depth > 0)
+                {
+                    for (int i = 0; i < depth - 1; i++)
+                        indent += "    ";
+                    indent += "* ";
+                }
+
+                writer.Write("  " + Environment.NewLine);
+                string fn = SanitizeFilename($"{path}/{component.ParentNamespace}/{component.Name}");
+
+                if (depth > 0)
+                {
+                    writer.Write($"{indent} [{component.FullName}]({fn}.md)");
+                }
+                else
+                {
+                    writer.WriteLine($"# {path}.{component.Name}");
+                    writer.WriteLine($"{component.Summary}");
+                }
+            }
+
+            List<AssemblyComponent> children = component.Children.Values.ToList();
+            children.Sort(_namespaceComparer);
+
+            foreach (AssemblyComponent child in children)
+                GenerateTypeIndex(child, writer, depth + 1, $"{path}/{component.Name}");
         }
 
         private AssemblyComponent ParseAssembly(ref string xml)
@@ -143,7 +163,7 @@ namespace VsXmlDoc2Markdown
                     continue;
 
                 // Parts: 0 = member type, 1 = namespace and name.
-                AssemblyComponent com = ParseComponent(assembly, node.Attributes["name"].Value);
+                AssemblyComponent com = _nameParser.Parse(assembly, node.Attributes["name"].Value);
                 if (com == null)
                     continue;
 
@@ -153,26 +173,15 @@ namespace VsXmlDoc2Markdown
 
         private void GenerateTypePage(string path, AssemblyComponent typeComponent)
         {
-            string directory = "";
-
-            AssemblyComponent parent = typeComponent.Parent;
-            while(parent != null)
-            {
-                directory = $"{parent.Name}/{directory}";
-                parent = parent.Parent;
-            }
-
-            string fullDir = $"{path}/{directory}";
-            if (!Directory.Exists(fullDir))
-                Directory.CreateDirectory(fullDir);
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
 
             string fn = SanitizeFilename(typeComponent.Name);
-            using (FileStream stream = new FileStream($"{fullDir}/{fn}.md", FileMode.Create, FileAccess.Write))
+            using (FileStream stream = new FileStream($"{path}/{fn}.md", FileMode.Create, FileAccess.Write))
             {
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
                 {
-                    writer.WriteLine($"# {typeComponent.ParentNamespace}.{typeComponent.Name}");
-                    writer.WriteLine($"{typeComponent.Summary}");
+                    GenerateTypeIndex(typeComponent, writer, 0, path);
                 }
             }
         }
@@ -207,7 +216,7 @@ namespace VsXmlDoc2Markdown
                         switch(attName)
                         {
                             case "cref":
-                                AssemblyComponent com = ParseComponent(assembly, att.Value);
+                                AssemblyComponent com = _nameParser.Parse(assembly, att.Value);
                                 result = result.Replace(xmlMatch.Value, com.QualifiedName);
                                 break; 
                         }
@@ -223,106 +232,6 @@ namespace VsXmlDoc2Markdown
         private string SanitizeFilename(string fn)
         {
             return Regex.Replace(fn, @"<|>|\[|\]|(&gt;)|(&lt;)", "_");
-        }
-
-        private AssemblyComponent ParseComponent(AssemblyComponent assembly, string nameString)
-        {
-            Match methodParams = Regex.Match(nameString, @"\((.*?)\)");
-            if (methodParams.Success)
-                nameString = nameString.Replace(methodParams.Value, "");
-
-            Match genericParams = Regex.Match(nameString, "(`+[0-9])");
-            if (genericParams.Success)
-            {
-                int genericCount = 0;
-                string generic = "";
-
-                if (int.TryParse(genericParams.Value.Replace("`", ""), out genericCount))
-                {
-                    if (genericCount > 1)
-                    {
-                        generic = "&lt;T1";
-                        for (int g = 1; g < genericCount; g++)
-                            generic += $",T{g+1}";
-
-                        generic += "&gt;";
-                    }
-                    else
-                    {
-                        generic = "&lt;T&gt;";
-                    }
-                }
-
-                nameString = nameString.Replace(genericParams.Value, generic);
-            }
-
-            string[] nameParts = nameString.Split(":");
-
-            string[] tnParts = nameParts[1].Split("~");
-            string[] nsParts = tnParts[0].Split(".");
-            int typeNameID = nsParts.Length - 1;
-            string returnType = tnParts.Length > 1 ? tnParts[1] : "";
-
-            int i = 0;
-            if (nsParts[0] == assembly.Name)
-                i++;
-
-            // Add or locate namespace components
-            AssemblyComponent parent = assembly;
-            string parentNamespace = "";
-            bool first = true;
-            for (; i < typeNameID; i++)
-            {
-                parent = parent[nsParts[i]];
-                parentNamespace += first ? parent.Name : $".{parent.Name}";
-                first = false;
-            }
-
-            if (parent.ComponentType == ComponentType.OperatorMethod)
-                return null;
-
-            AssemblyComponent com = new AssemblyComponent(ComponentType.Namespace, nsParts[typeNameID]);
-            com.Parent = parent;
-            com.Parameters = methodParams.Success ? methodParams.Value : "";
-            com.ReturnType = returnType;
-            com.ParentNamespace = parentNamespace;
-
-            switch (nameParts[0])
-            {
-                case "F": // Field
-                    parent.ComponentType = ComponentType.Type;
-                    com.ComponentType = ComponentType.Field;
-                    break;
-
-                case "T": // Type:
-                    com.ComponentType = ComponentType.Type;
-                    break;
-
-                case "M": // Method
-                    parent.ComponentType = ComponentType.Type;
-
-                    com.ComponentType = ComponentType.Method;
-                    break;
-
-                case "P": // Property
-                    parent.ComponentType = ComponentType.Type;
-
-                    if (!string.IsNullOrWhiteSpace(com.Parameters))
-                        com.ComponentType = ComponentType.IndexerProperty;
-                    else
-                        com.ComponentType = ComponentType.Property;
-                    break;
-
-                case "E": // Event
-                    parent.ComponentType = ComponentType.Type;
-                    com.ComponentType = ComponentType.Event;
-                    break;
-            }
-
-            // TODO improve this. Do not create a new component
-            if(!parent.Children.ContainsKey(com.FullName))
-                parent.Children.Add(com.FullName, com);
-            return com;
         }
     }
 }
