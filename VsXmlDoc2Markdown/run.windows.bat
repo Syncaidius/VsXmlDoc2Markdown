@@ -1,3 +1,2 @@
-﻿
-cmd dotnet VsXmlDoc2Markdown.dll
+﻿cmd dotnet VsXmlDoc2Markdown.dll
 pause

@@ -30,11 +30,11 @@ namespace VsXmlDoc2Markdown
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
 
-            using (FileStream stream = new FileStream($"{path}/{assembly.Name}.md", FileMode.Create, FileAccess.Write))
+            using (FileStream stream = new FileStream($"{path}/{assembly.ShortName}.md", FileMode.Create, FileAccess.Write))
             {
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
                 {
-                    writer.Write($"# {assembly.Name}");
+                    writer.Write($"# {assembly.ShortName}");
                     GenerateIndexPage(assembly, writer, 0, path);
                 }
             }
@@ -44,13 +44,13 @@ namespace VsXmlDoc2Markdown
         {
             if (component.Parent != null && component.ComponentType == ComponentType.Namespace)
             {
-                string ns = component.Name;
+                string ns = component.ShortName;
 
                 // Get full namespace by travelling backup the tree.
                 AssemblyComponent p = component.Parent;
                 while (p != null && p.ComponentType == ComponentType.Namespace)
                 {
-                    ns = $"{p.Name}.{ns}";
+                    ns = $"{p.ShortName}.{ns}";
                     p = p.Parent;
                 }
 
@@ -68,8 +68,8 @@ namespace VsXmlDoc2Markdown
                     indent += "* ";
 
                     writer.Write("  " + Environment.NewLine);
-                    string fn = SanitizePath(component.Name);
-                    writer.Write($"{indent} [{component.Name}]({path}/{fn}.md)");
+                    string fn = SanitizePath(component.ShortName);
+                    writer.Write($"{indent} [{component.ShortName}]({path}/{fn}.md)");
                     GenerateTypePage(path, component);
                 }
 
@@ -80,7 +80,7 @@ namespace VsXmlDoc2Markdown
             children.Sort(_namespaceComparer);
 
             foreach (AssemblyComponent child in children)
-                GenerateIndexPage(child, writer, depth + 1, $"{path}/{component.Name}");
+                GenerateIndexPage(child, writer, depth + 1, $"{path}/{component.ShortName}");
         }
 
         private void GenerateTypeIndex(AssemblyComponent component, StreamWriter writer, int depth, string path)
@@ -97,15 +97,15 @@ namespace VsXmlDoc2Markdown
                 }
 
                 writer.Write("  " + Environment.NewLine);
-                string fn = SanitizePath($"{path}/{component.Name}");
+                string fn = SanitizePath($"{path}/{component.ShortName}");
 
                 if (depth > 0)
                 {
-                    writer.Write($"{indent} [{component.FullName}]({fn}.md)");
+                    writer.Write($"{indent} [{component.Definition}]({fn}.md)");
                 }
                 else
                 {
-                    writer.WriteLine($"# {component.ParentNamespace}.{component.Name}");
+                    writer.WriteLine($"# {component.QualifiedName}");
                     writer.WriteLine($"{component.Summary}");
                 }
             }
@@ -114,7 +114,7 @@ namespace VsXmlDoc2Markdown
             children.Sort(_namespaceComparer);
 
             foreach (AssemblyComponent child in children)
-                GenerateTypeIndex(child, writer, depth + 1, $"{path}/{component.Name}");
+                GenerateTypeIndex(child, writer, depth + 1, $"{path}/{component.ShortName}");
         }
 
         private AssemblyComponent ParseAssembly(ref string xml)
@@ -122,7 +122,7 @@ namespace VsXmlDoc2Markdown
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.LoadXml(xml);
 
-            AssemblyComponent assembly = new AssemblyComponent(ComponentType.Assembly, "");
+            AssemblyComponent assembly = new AssemblyComponent(ComponentType.Assembly);
             XmlNode root = xmlDoc["doc"];
 
             foreach (XmlNode node in root.ChildNodes)
@@ -149,7 +149,7 @@ namespace VsXmlDoc2Markdown
                 switch (node.Name.ToLower())
                 {
                     case "name":
-                        assembly.Name = node.InnerText;
+                        assembly.ShortName = node.InnerText;
                         break;
                 }
             }
@@ -180,7 +180,7 @@ namespace VsXmlDoc2Markdown
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
 
-            string fn = SanitizePath(typeComponent.Name);
+            string fn = SanitizePath(typeComponent.ShortName);
             using (FileStream stream = new FileStream($"{path}/{fn}.md", FileMode.Create, FileAccess.Write))
             {
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))

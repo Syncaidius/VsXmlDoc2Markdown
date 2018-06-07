@@ -22,14 +22,27 @@ namespace VsXmlDoc2Markdown
         public AssemblyComponent Parent { get; set; }
 
         /// <summary>
-        /// Gets or sets the component name.
+        /// Gets or sets the component name, without any parameters or parenthesis attached.
         /// </summary>
-        public string Name { get; set; }
+        public string ShortName { get; set; } = "";
+
+        /// <summary>
+        /// Gets the full component name, with any parameters and parenthesis attached.
+        /// </summary>
+        public string FullName
+        {
+            get
+            {
+                string generics = ConcatParameters(GenericParameters, "&lt;", "&gt;", ",");
+                string input = ConcatParameters(InputParameters, "(", ")", ",");
+                return $"{ShortName}{generics}{input}";
+            }
+        }
 
         /// <summary>
         /// Gets or sets the parameter information.
         /// </summary>
-        public string Parameters { get; set; }
+        public List<ComponentParameter> InputParameters { get; } = new List<ComponentParameter>();
 
         /// <summary>
         /// Gets or sets the return type.
@@ -42,39 +55,45 @@ namespace VsXmlDoc2Markdown
         public string ParentNamespace { get; set; }
 
         /// <summary>
-        /// Gets the full name of the component, which includes any generic or method paramters it may have.
+        /// Gets a list of generic parameter names.
         /// </summary>
-        public string FullName
+        public List<ComponentParameter> GenericParameters { get; } = new List<ComponentParameter>();
+
+        /// <summary>
+        /// Gets the full definition name of the component, which includes the return type and any parameters it may have.
+        /// </summary>
+        public string Definition
         {
             get
             {
+                string generics = ConcatParameters(GenericParameters, "&lt;", "&gt;", ",");
+                string input = ConcatParameters(InputParameters, "(", ")", ",");
                 if (string.IsNullOrWhiteSpace(ReturnType))
-                    return $"{Name}{Parameters}";
+                    return $"{ShortName}{generics}{input}";
                 else
-                    return $"{Name}{Parameters} [{ReturnType}]";
+                    return $"{ShortName}{generics}{input} [{ReturnType}]";
             }
         }
 
         /// <summary>
-        /// Gets the assembly-qualified name which includes the <see cref="ParentNamespace"/> and the <see cref="FullName"/>.
+        /// Gets the assembly-qualified name which includes the <see cref="ParentNamespace"/> and the <see cref="Definition"/>.
         /// </summary>
-        public string QualifiedName => $"{ParentNamespace}.{FullName}";
+        public string QualifiedName => $"{ParentNamespace}.{Definition}";
 
         /// <summary>
         /// Gets or sets the component summary.
         /// </summary>
-        public string Summary { get; set; }
+        public string Summary { get; set; } = "{{MISSING SUMMARY}}";
 
         /// <summary>
         /// Creates a new instance of <see cref="AssemblyComponent"/>.
         /// </summary>
         /// <param name="type">The type of the component.</param>
         /// <param name="name">The name of the component.</param>
-        public AssemblyComponent(ComponentType type, string name)
+        public AssemblyComponent(ComponentType type)
         {
             Children = new Dictionary<string, AssemblyComponent>();
             ComponentType = type;
-            Name = name;
         }
 
         /// <summary>
@@ -83,7 +102,7 @@ namespace VsXmlDoc2Markdown
         /// <returns></returns>
         public override string ToString()
         {
-            return $"{Name}{Parameters} - {ComponentType}";
+            return $"{FullName} - {ComponentType}";
         }
 
         /// <summary>
@@ -101,12 +120,32 @@ namespace VsXmlDoc2Markdown
                 }
                 else
                 {
-                    child = new AssemblyComponent(ComponentType.Namespace, childName);
+                    child = new AssemblyComponent(ComponentType.Namespace);
+                    child.ShortName = childName;
                     child.Parent = this;
                     Children.Add(childName, child);
                     return child;
                 }
             }
+        }
+
+        private static string ConcatParameters(List<ComponentParameter> parameters, string leftParenthesis, string rightParenthesis, string separator)
+        {
+            string result = "";
+
+            if (parameters.Count > 0)
+            {
+                bool first = true;
+                foreach (ComponentParameter g in parameters)
+                {
+                    result += first ? $"{leftParenthesis}{g}" : $"{separator}{g}";
+                    first = false;
+                }
+
+                result += $"{rightParenthesis}";
+            }
+
+            return result;
         }
     }
 }

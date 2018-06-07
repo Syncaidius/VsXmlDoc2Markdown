@@ -15,7 +15,7 @@ namespace VsXmlDoc2Markdown
             else if (x.ComponentType == ComponentType.Namespace && y.ComponentType == ComponentType.Namespace)
                 return 0;
 
-            return x.Name.CompareTo(y.Name);
+            return x.ShortName.CompareTo(y.ShortName);
         }
     }
 }

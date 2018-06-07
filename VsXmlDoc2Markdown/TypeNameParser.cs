@@ -9,48 +9,20 @@ namespace VsXmlDoc2Markdown
     {
         internal AssemblyComponent Parse(AssemblyComponent assembly, string nameString)
         {
-            Match methodParams = Regex.Match(nameString, @"\((.*?)\)");
-            if (methodParams.Success)
-                nameString = nameString.Replace(methodParams.Value, "");
+            AssemblyComponent com = new AssemblyComponent(ComponentType.Namespace);
 
-            Match indexerParams = Regex.Match(nameString, @"\[(.*?)\]");
-            if (indexerParams.Success)
-                nameString = nameString.Replace(indexerParams.Value, "");
-
-            Match genericParams = Regex.Match(nameString, "(`+[0-9])");
-            if (genericParams.Success)
-            {
-                int genericCount = 0;
-                string generic = "";
-
-                if (int.TryParse(genericParams.Value.Replace("`", ""), out genericCount))
-                {
-                    if (genericCount > 1)
-                    {
-                        generic = "&lt;T1";
-                        for (int g = 1; g < genericCount; g++)
-                            generic += $",T{g + 1}";
-
-                        generic += "&gt;";
-                    }
-                    else
-                    {
-                        generic = "&lt;T&gt;";
-                    }
-                }
-
-                nameString = nameString.Replace(genericParams.Value, generic);
-            }
+            ParseGenericParameters(com, ref nameString);
+            ParseMethodParameters(com, ref nameString);
+            ParseIndexerParameters(com, ref nameString); 
 
             string[] nameParts = nameString.Split(":");
-
             string[] tnParts = nameParts[1].Split("~");
             string[] nsParts = tnParts[0].Split(".");
             int typeNameID = nsParts.Length - 1;
             string returnType = tnParts.Length > 1 ? tnParts[1] : "";
 
             int i = 0;
-            if (nsParts[0] == assembly.Name)
+            if (nsParts[0] == assembly.ShortName)
                 i++;
 
             // Add or locate namespace components
@@ -60,16 +32,15 @@ namespace VsXmlDoc2Markdown
             for (; i < typeNameID; i++)
             {
                 parent = parent[nsParts[i]];
-                parentNamespace += first ? parent.Name : $".{parent.Name}";
+                parentNamespace += first ? parent.ShortName : $".{parent.ShortName}";
                 first = false;
             }
 
             if (parent.ComponentType == ComponentType.OperatorMethod)
                 return null;
 
-            AssemblyComponent com = new AssemblyComponent(ComponentType.Namespace, nsParts[typeNameID]);
+            com.ShortName = nsParts[typeNameID];
             com.Parent = parent;
-            com.Parameters = methodParams.Success ? methodParams.Value : indexerParams.Success ? indexerParams.Value : "";
             com.ReturnType = returnType;
             com.ParentNamespace = parentNamespace;
 
@@ -86,20 +57,15 @@ namespace VsXmlDoc2Markdown
 
                 case "M": // Method
                     parent.ComponentType = ComponentType.Type;
-
-                    if (!methodParams.Success)
-                        com.Parameters = "()";
-
                     com.ComponentType = ComponentType.Method;
                     break;
 
                 case "P": // Property
                     parent.ComponentType = ComponentType.Type;
-
-                    if (indexerParams.Success)
-                        com.ComponentType = ComponentType.IndexerProperty;
-                    else
+                    if (com.InputParameters.Count == 0)
                         com.ComponentType = ComponentType.Property;
+                    else
+                        com.ComponentType = ComponentType.IndexerProperty;
                     break;
 
                 case "E": // Event
@@ -109,9 +75,70 @@ namespace VsXmlDoc2Markdown
             }
 
             // TODO improve this. Do not create a new component
-            if (!parent.Children.ContainsKey(com.FullName))
-                parent.Children.Add(com.FullName, com);
+            if (!parent.Children.ContainsKey(com.Definition))
+                parent.Children.Add(com.Definition, com);
+            else
+            {
+                int derp = 0;
+            }
             return com;
+        }
+
+        private void ParseGenericParameters(AssemblyComponent com, ref string nameString)
+        {
+            Match genericParams = Regex.Match(nameString, "(`+[0-9])");
+            if (genericParams.Success)
+            {
+                int genericCount = 0;
+                string generic = "";
+
+                if (int.TryParse(genericParams.Value.Replace("`", ""), out genericCount))
+                {
+                    if (genericCount > 1)
+                    {
+                        for (int i = 0; i < genericCount; i++)
+                            com.GenericParameters.Add(new ComponentParameter()
+                            {
+                                Name = $"T{i + 1}",
+                            });
+                    }
+                    else
+                    {
+                        com.GenericParameters.Add(new ComponentParameter()
+                        {
+                            Name = "T"
+                        });
+                    }
+                }
+
+                nameString = nameString.Replace(genericParams.Value, generic);
+            }
+        }
+
+        private void ParseMethodParameters(AssemblyComponent com, ref string nameString)
+        {
+            Match methodParams = Regex.Match(nameString, @"\((.*?)\)");
+            if (methodParams.Success)
+            {
+                nameString = nameString.Replace(methodParams.Value, "");
+                string[] parameters = methodParams.Value.Replace("(", "").Replace(")", "").Split(",");
+                for(int i = 0; i < parameters.Length; i++)
+                {
+                    com.InputParameters.Add(new ComponentParameter()
+                    {
+                        Name = parameters[i],
+                    });
+                }
+            }
+        }
+
+        private void ParseIndexerParameters(AssemblyComponent com, ref string nameString)
+        {
+            Match indexerParams = Regex.Match(nameString, @"\[(.*?)\]");
+            if (indexerParams.Success)
+            {
+                nameString = nameString.Replace(indexerParams.Value, "");
+            }
         }
     }
 }
