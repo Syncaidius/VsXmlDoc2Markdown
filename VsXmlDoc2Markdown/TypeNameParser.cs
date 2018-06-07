@@ -13,6 +13,10 @@ namespace VsXmlDoc2Markdown
             if (methodParams.Success)
                 nameString = nameString.Replace(methodParams.Value, "");
 
+            Match indexerParams = Regex.Match(nameString, @"\[(.*?)\]");
+            if (indexerParams.Success)
+                nameString = nameString.Replace(indexerParams.Value, "");
+
             Match genericParams = Regex.Match(nameString, "(`+[0-9])");
             if (genericParams.Success)
             {
@@ -65,7 +69,7 @@ namespace VsXmlDoc2Markdown
 
             AssemblyComponent com = new AssemblyComponent(ComponentType.Namespace, nsParts[typeNameID]);
             com.Parent = parent;
-            com.Parameters = methodParams.Success ? methodParams.Value : "";
+            com.Parameters = methodParams.Success ? methodParams.Value : indexerParams.Success ? indexerParams.Value : "";
             com.ReturnType = returnType;
             com.ParentNamespace = parentNamespace;
 
@@ -83,13 +87,16 @@ namespace VsXmlDoc2Markdown
                 case "M": // Method
                     parent.ComponentType = ComponentType.Type;
 
+                    if (!methodParams.Success)
+                        com.Parameters = "()";
+
                     com.ComponentType = ComponentType.Method;
                     break;
 
                 case "P": // Property
                     parent.ComponentType = ComponentType.Type;
 
-                    if (!string.IsNullOrWhiteSpace(com.Parameters))
+                    if (indexerParams.Success)
                         com.ComponentType = ComponentType.IndexerProperty;
                     else
                         com.ComponentType = ComponentType.Property;

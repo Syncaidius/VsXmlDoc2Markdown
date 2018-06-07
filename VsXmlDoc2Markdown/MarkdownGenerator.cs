@@ -68,7 +68,7 @@ namespace VsXmlDoc2Markdown
                     indent += "* ";
 
                     writer.Write("  " + Environment.NewLine);
-                    string fn = SanitizeFilename(component.Name);
+                    string fn = SanitizePath(component.Name);
                     writer.Write($"{indent} [{component.Name}]({path}/{fn}.md)");
                     GenerateTypePage(path, component);
                 }
@@ -97,7 +97,7 @@ namespace VsXmlDoc2Markdown
                 }
 
                 writer.Write("  " + Environment.NewLine);
-                string fn = SanitizeFilename($"{path}/{component.Name}");
+                string fn = SanitizePath($"{path}/{component.Name}");
 
                 if (depth > 0)
                 {
@@ -160,7 +160,10 @@ namespace VsXmlDoc2Markdown
             foreach(XmlNode node in membersNode.ChildNodes)
             {
                 if (node.Name == "#comment")
+                {
+                    Console.WriteLine("Documentation error: " + node.InnerText);
                     continue;
+                }
 
                 // Parts: 0 = member type, 1 = namespace and name.
                 AssemblyComponent com = _nameParser.Parse(assembly, node.Attributes["name"].Value);
@@ -173,10 +176,11 @@ namespace VsXmlDoc2Markdown
 
         private void GenerateTypePage(string path, AssemblyComponent typeComponent)
         {
+            path = SanitizePath(path);
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
 
-            string fn = SanitizeFilename(typeComponent.Name);
+            string fn = SanitizePath(typeComponent.Name);
             using (FileStream stream = new FileStream($"{path}/{fn}.md", FileMode.Create, FileAccess.Write))
             {
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
@@ -229,7 +233,7 @@ namespace VsXmlDoc2Markdown
             return result;
         }
 
-        private string SanitizeFilename(string fn)
+        private string SanitizePath(string fn)
         {
             return Regex.Replace(fn, @"<|>|\[|\]|(&gt;)|(&lt;)", "_");
         }
