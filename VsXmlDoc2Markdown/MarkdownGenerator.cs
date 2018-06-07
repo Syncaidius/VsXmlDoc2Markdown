@@ -97,7 +97,7 @@ namespace VsXmlDoc2Markdown
                 }
 
                 writer.Write("  " + Environment.NewLine);
-                string fn = SanitizeFilename($"{path}/{component.ParentNamespace}/{component.Name}");
+                string fn = SanitizeFilename($"{path}/{component.Name}");
 
                 if (depth > 0)
                 {
