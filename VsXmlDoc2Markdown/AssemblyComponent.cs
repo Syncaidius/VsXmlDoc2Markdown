@@ -27,6 +27,18 @@ namespace VsXmlDoc2Markdown
         public string ShortName { get; set; } = "";
 
         /// <summary>
+        /// Gets the component name, with any generic parameters attached.
+        /// </summary>
+        public string GenericName
+        {
+            get
+            {
+                string generics = ConcatParameters(GenericParameters, "&lt;", "&gt;", ",");
+                return $"{ShortName}{generics}";
+            }
+        }
+
+        /// <summary>
         /// Gets the full component name, with any parameters and parenthesis attached.
         /// </summary>
         public string FullName

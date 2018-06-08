@@ -27,13 +27,13 @@ namespace VsXmlDoc2Markdown
 
             // Add or locate namespace components
             AssemblyComponent parent = assembly;
-            string parentNamespace = "";
-            bool first = true;
             for (; i < typeNameID; i++)
             {
-                parent = parent[nsParts[i]];
-                parentNamespace += first ? parent.ShortName : $".{parent.ShortName}";
-                first = false;
+                AssemblyComponent newParent = parent[nsParts[i]];
+                if (parent != assembly)
+                    newParent.ParentNamespace = parent.ParentNamespace != null ? $"{parent.ParentNamespace}.{parent.ShortName}" : parent.ShortName;
+
+                parent = newParent;
             }
 
             if (parent.ComponentType == ComponentType.OperatorMethod)
@@ -42,7 +42,7 @@ namespace VsXmlDoc2Markdown
             com.ShortName = nsParts[typeNameID];
             com.Parent = parent;
             com.ReturnType = returnType;
-            com.ParentNamespace = parentNamespace;
+            com.ParentNamespace = $"{parent.ParentNamespace}.{parent.ShortName}";
 
             switch (nameParts[0])
             {
@@ -77,10 +77,7 @@ namespace VsXmlDoc2Markdown
             // TODO improve this. Do not create a new component
             if (!parent.Children.ContainsKey(com.Definition))
                 parent.Children.Add(com.Definition, com);
-            else
-            {
-                int derp = 0;
-            }
+
             return com;
         }
 

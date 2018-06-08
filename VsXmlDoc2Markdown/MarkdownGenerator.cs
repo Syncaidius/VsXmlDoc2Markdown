@@ -68,8 +68,8 @@ namespace VsXmlDoc2Markdown
                     indent += "* ";
 
                     writer.Write("  " + Environment.NewLine);
-                    string fn = SanitizePath(component.ShortName);
-                    writer.Write($"{indent} [{component.ShortName}]({path}/{fn}.md)");
+                    string fn = SanitizePath($"{path}/{component.GenericName}");
+                    writer.Write($"{indent} [{component.Definition}]({fn}.md)");
                     GenerateTypePage(path, component);
                 }
 
@@ -80,7 +80,7 @@ namespace VsXmlDoc2Markdown
             children.Sort(_namespaceComparer);
 
             foreach (AssemblyComponent child in children)
-                GenerateIndexPage(child, writer, depth + 1, $"{path}/{component.ShortName}");
+                GenerateIndexPage(child, writer, depth + 1, $"{path}/{component.GenericName}");
         }
 
         private void GenerateTypeIndex(AssemblyComponent component, StreamWriter writer, int depth, string path)
@@ -180,7 +180,7 @@ namespace VsXmlDoc2Markdown
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
 
-            string fn = SanitizePath(typeComponent.ShortName);
+            string fn = SanitizePath(typeComponent.GenericName);
             using (FileStream stream = new FileStream($"{path}/{fn}.md", FileMode.Create, FileAccess.Write))
             {
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
