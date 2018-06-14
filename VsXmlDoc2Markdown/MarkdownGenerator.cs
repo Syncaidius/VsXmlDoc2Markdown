@@ -161,7 +161,7 @@ namespace VsXmlDoc2Markdown
             {
                 if (node.Name == "#comment")
                 {
-                    Console.WriteLine("Documentation error: " + node.InnerText);
+                    Console.WriteLine("Documentation warning: " + node.InnerText);
                     continue;
                 }
 
@@ -206,7 +206,7 @@ namespace VsXmlDoc2Markdown
         private string ParseSummaryText(AssemblyComponent assembly, string innerXml)
         {
             string result = innerXml;
-            Match xmlMatch = Regex.Match(result, @"(<.*?>.*</.*?>)|(<.*?/>)");
+            Match xmlMatch = Regex.Match(result, @"(<.*?/>)|(<.*?>\S*</.*?>)");
             while (xmlMatch.Success)
             {
                 XmlDocument inlineDoc = new XmlDocument();
