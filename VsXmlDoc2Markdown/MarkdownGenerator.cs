@@ -35,7 +35,7 @@ namespace VsXmlDoc2Markdown
                 using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
                 {
                     writer.Write($"# {assembly.ShortName}");
-                    GenerateIndexPage(assembly, writer, 0, path);
+                    GenerateIndexPage(assembly, writer, 0, "");
                 }
             }
         }
